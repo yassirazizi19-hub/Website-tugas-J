@@ -330,6 +330,32 @@
       window.__toastTimer = setTimeout(() => t.classList.add("hidden"), 3000);
     }
 
+    function copyWithTextarea(text) {
+      const ta = document.createElement("textarea");
+      ta.value = text;
+      ta.setAttribute("readonly", "");
+      ta.style.position = "fixed";
+      ta.style.opacity = "0";
+      document.body.appendChild(ta);
+      ta.select();
+      let ok = false;
+      try { ok = document.execCommand("copy"); } catch (_) { ok = false; }
+      document.body.removeChild(ta);
+      return ok;
+    }
+
+    async function copyText(text, successMsg) {
+      try {
+        if (navigator.clipboard && window.isSecureContext) {
+          await navigator.clipboard.writeText(text);
+          return showToast(successMsg);
+        }
+      } catch (_) {}
+      if (copyWithTextarea(text)) return showToast(successMsg);
+      showToast("Gagal menyalin otomatis. Silakan salin manual.");
+      prompt("Salin teks berikut:", text);
+    }
+
     function updateSyncUI(online, label) {
       const dot = document.getElementById("syncDot");
       const status = document.getElementById("syncStatus");
@@ -550,8 +576,7 @@
 ${item.desc ? `• Catatan: ${item.desc}
 ` : ""}
 Cek detail di web tugas kelas!`;
-          navigator.clipboard?.writeText(text);
-          showToast("Info tugas disalin untuk WhatsApp!");
+          copyText(text, "Info tugas disalin untuk WhatsApp!");
         });
       });
 
@@ -726,6 +751,7 @@ Cek detail di web tugas kelas!`;
     });
 
     document.getElementById("pinInput").addEventListener("keydown", (e) => {
+      if (e.isComposing || e.keyCode === 229) return;
       if (e.key === "Enter") document.getElementById("btnSubmitPin").click();
     });
 
@@ -772,13 +798,10 @@ Cek detail di web tugas kelas!`;
    ⏰ Deadline: ${formatDeadline(t.deadline)}`);
       const msg = `*REKAP TUGAS KULIAH KELAS*
 
-${lines.join("
-
-")}
+${lines.join("\n\n")}
 
 _Update real-time di web tugas kelas_`;
-      navigator.clipboard?.writeText(msg);
-      showToast("Rekap semua tugas disalin untuk grup WA!");
+      copyText(msg, "Rekap semua tugas disalin untuk grup WA!");
     });
 
     ["searchInput", "filterCourse", "filterStatus"].forEach(id => {
