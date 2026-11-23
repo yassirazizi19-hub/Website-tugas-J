@@ -1,0 +1,855 @@
+<!DOCTYPE html>
+<html lang="id" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Manajemen Tugas Kuliah — Real-Time Kelas</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-main: #09090f;
+      --bg-card: #11111a;
+      --bg-elevated: #181826;
+      --grad-pastel: linear-gradient(135deg, #c084fc 0%, #f472b6 50%, #38bdf8 100%);
+    }
+    * { box-sizing: border-box; font-family: 'Plus Jakarta Sans', sans-serif; }
+    body {
+      background-color: var(--bg-main);
+      color: #f4f4f8;
+      background-image:
+        radial-gradient(circle at 12% 10%, rgba(192, 132, 252, 0.12), transparent 35%),
+        radial-gradient(circle at 88% 15%, rgba(56, 189, 248, 0.12), transparent 38%),
+        radial-gradient(circle at 50% 90%, rgba(244, 114, 182, 0.08), transparent 45%);
+      min-height: 100vh;
+    }
+    .pastel-text {
+      background: var(--grad-pastel);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .pastel-btn {
+      background: var(--grad-pastel);
+      color: #09090f;
+      font-weight: 700;
+      transition: transform 0.15s ease, opacity 0.15s ease, box-shadow 0.2s ease;
+    }
+    .pastel-btn:hover {
+      opacity: 0.94;
+      transform: translateY(-1px);
+      box-shadow: 0 8px 25px -6px rgba(244, 114, 182, 0.45);
+    }
+    .pastel-border {
+      position: relative;
+      background: var(--bg-card);
+      border: 1px solid rgba(192, 132, 252, 0.22);
+    }
+    .pastel-border::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      border-radius: inherit;
+      padding: 1px;
+      background: linear-gradient(135deg, rgba(192, 132, 252, 0.45), rgba(244, 114, 182, 0.35), rgba(56, 189, 248, 0.45));
+      -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+      -webkit-mask-composite: xor;
+      mask-composite: exclude;
+      pointer-events: none;
+    }
+    .glass-card {
+      background: rgba(17, 17, 26, 0.88);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: #09090f; }
+    ::-webkit-scrollbar-thumb { background: #27273a; border-radius: 999px; }
+    ::-webkit-scrollbar-thumb:hover { background: #c084fc; }
+  </style>
+</head>
+<body class="antialiased selection:bg-pink-400/30 selection:text-pink-200">
+
+  <!-- TOP NAVBAR -->
+  <header class="sticky top-0 z-30 border-b border-white/10 bg-[#09090f]/85 backdrop-blur-xl">
+    <div class="max-w-6xl mx-auto px-4 py-3.5 flex flex-wrap items-center justify-between gap-3">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl flex items-center justify-center shadow-lg" style="background: linear-gradient(135deg, #c084fc, #f472b6, #38bdf8);">
+          <svg class="w-5 h-5 text-[#09090f]" fill="none" stroke="currentColor" stroke-width="2.4" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/>
+          </svg>
+        </div>
+        <div>
+          <h1 class="text-lg sm:text-xl font-extrabold tracking-tight pastel-text">Tugas Kuliah Kelas</h1>
+          <div class="flex items-center gap-2 text-xs text-slate-400">
+            <span id="syncDot" class="inline-block w-2 h-2 rounded-full bg-amber-400 animate-pulse"></span>
+            <span id="syncStatus">Menghubungkan sinkronisasi...</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="flex flex-wrap items-center gap-2">
+        <button id="btnCopyWA" class="px-3 py-2 rounded-xl text-xs font-semibold bg-white/5 hover:bg-white/10 border border-white/10 text-sky-300 flex items-center gap-1.5 transition">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
+          <span>Salin Rekap WA</span>
+        </button>
+
+        <button id="btnAdminToggle" class="px-3.5 py-2 rounded-xl text-xs font-bold border border-purple-400/30 bg-purple-500/10 hover:bg-purple-500/20 text-purple-200 flex items-center gap-1.5 transition">
+          <svg class="w-4 h-4 text-pink-300" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
+          <span id="adminBtnLabel">Mode Komting</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <main class="max-w-6xl mx-auto px-4 py-6 space-y-6">
+
+    <!-- BANNER KOMTING AKTIF -->
+    <div id="adminBar" class="hidden pastel-border rounded-2xl p-4 flex flex-wrap items-center justify-between gap-3">
+      <div class="flex items-center gap-3">
+        <span class="px-2.5 py-1 rounded-lg text-[11px] font-extrabold uppercase tracking-wider bg-pink-500/20 text-pink-300 border border-pink-400/30">Admin Aktif</span>
+        <p class="text-xs sm:text-sm text-slate-300">Perubahan tugas & mata kuliah langsung tampil di seluruh HP anggota kelas.</p>
+      </div>
+      <div class="flex flex-wrap items-center gap-2">
+        <button id="btnOpenTaskModal" class="pastel-btn px-3.5 py-2 rounded-xl text-xs flex items-center gap-1.5">
+          <span>+ Tambah Tugas</span>
+        </button>
+        <button id="btnOpenCourseModal" class="px-3 py-2 rounded-xl text-xs font-semibold bg-white/5 hover:bg-white/10 border border-white/10 text-purple-200 transition">
+          Kelola Matkul
+        </button>
+        <button id="btnChangePin" class="px-3 py-2 rounded-xl text-xs font-semibold bg-white/5 hover:bg-white/10 border border-white/10 text-slate-300 transition">
+          Ubah PIN
+        </button>
+      </div>
+    </div>
+
+    <!-- STATISTIK & PROGRES PRIBADI -->
+    <section class="grid grid-cols-2 lg:grid-cols-4 gap-3.5">
+      <div class="glass-card rounded-2xl p-4">
+        <p class="text-xs text-slate-400">Total Tugas Kelas</p>
+        <p id="statTotal" class="text-2xl font-extrabold mt-1 text-white">0</p>
+        <p class="text-[11px] text-purple-300 mt-1">Tersinkronisasi otomatis</p>
+      </div>
+      <div class="glass-card rounded-2xl p-4">
+        <p class="text-xs text-slate-400">Progres Pribadimu</p>
+        <div class="flex items-end justify-between mt-1">
+          <p id="statDone" class="text-2xl font-extrabold text-sky-300">0</p>
+          <span id="statPercent" class="text-xs font-bold text-pink-300">0%</span>
+        </div>
+        <div class="w-full h-1.5 bg-white/10 rounded-full mt-2 overflow-hidden">
+          <div id="progressBar" class="h-full rounded-full transition-all duration-300" style="width: 0%; background: linear-gradient(90deg, #c084fc, #f472b6, #38bdf8);"></div>
+        </div>
+      </div>
+      <div class="glass-card rounded-2xl p-4">
+        <p class="text-xs text-slate-400">Sedang Dikerjakan</p>
+        <p id="statInProgress" class="text-2xl font-extrabold mt-1 text-pink-300">0</p>
+        <p class="text-[11px] text-slate-400 mt-1">Status lokal di perangkatmu</p>
+      </div>
+      <div class="glass-card rounded-2xl p-4">
+        <p class="text-xs text-slate-400">Mendesak (&lt; 24 Jam)</p>
+        <p id="statUrgent" class="text-2xl font-extrabold mt-1 text-rose-400">0</p>
+        <p class="text-[11px] text-slate-400 mt-1">Segera kumpulkan</p>
+      </div>
+    </section>
+
+    <!-- FILTER & PENCARIAN -->
+    <section class="glass-card rounded-2xl p-4 flex flex-col md:flex-row gap-3 items-stretch md:items-center justify-between">
+      <div class="relative flex-1">
+        <svg class="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+        <input id="searchInput" type="text" placeholder="Cari judul tugas atau deskripsi..." class="w-full pl-10 pr-4 py-2.5 rounded-xl bg-[#0d0d16] border border-white/10 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-pink-400/60" />
+      </div>
+
+      <div class="flex flex-wrap gap-2.5">
+        <select id="filterCourse" class="px-3.5 py-2.5 rounded-xl bg-[#0d0d16] border border-white/10 text-xs sm:text-sm text-slate-200 focus:outline-none focus:border-purple-400/60">
+          <option value="ALL">Semua Mata Kuliah</option>
+        </select>
+
+        <select id="filterStatus" class="px-3.5 py-2.5 rounded-xl bg-[#0d0d16] border border-white/10 text-xs sm:text-sm text-slate-200 focus:outline-none focus:border-sky-400/60">
+          <option value="ALL">Semua Status</option>
+          <option value="todo">Belum Dikerjakan</option>
+          <option value="doing">Sedang Dikerjakan</option>
+          <option value="done">Selesai</option>
+        </select>
+      </div>
+    </section>
+
+    <!-- DAFTAR TUGAS -->
+    <section id="taskList" class="grid grid-cols-1 md:grid-cols-2 gap-4"></section>
+
+    <!-- EMPTY STATE -->
+    <section id="emptyState" class="hidden glass-card rounded-2xl p-10 text-center space-y-3">
+      <div class="w-14 h-14 mx-auto rounded-2xl flex items-center justify-center bg-white/5 border border-white/10">
+        <svg class="w-7 h-7 text-purple-300" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+      </div>
+      <h3 class="text-base font-bold text-white">Belum ada tugas ditemukan</h3>
+      <p class="text-xs sm:text-sm text-slate-400 max-w-md mx-auto">Daftar tugas kelas masih kosong atau tidak cocok dengan filter pencarianmu. Komting dapat menambahkan tugas lewat <span class="text-pink-300 font-semibold">Mode Komting</span>.</p>
+    </section>
+
+  </main>
+
+  <!-- MODAL PIN KOMTING -->
+  <div id="pinModal" class="hidden fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="pastel-border rounded-2xl w-full max-w-sm p-6 space-y-4">
+      <div class="flex items-center justify-between">
+        <h2 class="text-lg font-bold pastel-text">Masuk Mode Komting</h2>
+        <button data-close="pinModal" class="text-slate-400 hover:text-white text-lg">&times;</button>
+      </div>
+      <p class="text-xs text-slate-400">Masukkan PIN Komting untuk mengelola tugas & mata kuliah kelas. (PIN default: <code class="text-pink-300 font-bold">1234</code>)</p>
+      <input id="pinInput" type="password" inputmode="numeric" maxlength="10" placeholder="Masukkan PIN..." class="w-full px-4 py-2.5 rounded-xl bg-[#09090f] border border-white/15 text-center text-lg tracking-widest text-white focus:outline-none focus:border-pink-400" />
+      <p id="pinError" class="hidden text-xs text-rose-400 text-center">PIN salah, silakan coba lagi.</p>
+      <div class="flex justify-end gap-2 pt-1">
+        <button data-close="pinModal" class="px-4 py-2 rounded-xl text-xs font-semibold bg-white/5 text-slate-300">Batal</button>
+        <button id="btnSubmitPin" class="pastel-btn px-5 py-2 rounded-xl text-xs">Masuk</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL TAMBAH / EDIT TUGAS -->
+  <div id="taskModal" class="hidden fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="pastel-border rounded-2xl w-full max-w-lg p-6 space-y-4 max-h-[92vh] overflow-y-auto">
+      <div class="flex items-center justify-between">
+        <h2 id="taskModalTitle" class="text-lg font-bold pastel-text">Tambah Tugas Baru</h2>
+        <button data-close="taskModal" class="text-slate-400 hover:text-white text-xl">&times;</button>
+      </div>
+      <form id="taskForm" class="space-y-3.5">
+        <input type="hidden" id="taskId" />
+        <div>
+          <label class="block text-xs font-semibold text-slate-300 mb-1">Mata Kuliah</label>
+          <select id="taskCourse" required class="w-full px-3.5 py-2.5 rounded-xl bg-[#09090f] border border-white/15 text-sm text-white focus:outline-none focus:border-purple-400"></select>
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-slate-300 mb-1">Judul Tugas</label>
+          <input id="taskTitle" type="text" required placeholder="Contoh: Laporan Praktikum Modul 3" class="w-full px-3.5 py-2.5 rounded-xl bg-[#09090f] border border-white/15 text-sm text-white focus:outline-none focus:border-pink-400" />
+        </div>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-semibold text-slate-300 mb-1">Deadline</label>
+            <input id="taskDeadline" type="datetime-local" required class="w-full px-3.5 py-2.5 rounded-xl bg-[#09090f] border border-white/15 text-sm text-white focus:outline-none focus:border-sky-400" />
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-300 mb-1">Prioritas</label>
+            <select id="taskPriority" class="w-full px-3.5 py-2.5 rounded-xl bg-[#09090f] border border-white/15 text-sm text-white focus:outline-none focus:border-purple-400">
+              <option value="Tinggi">Tinggi</option>
+              <option value="Sedang" selected>Sedang</option>
+              <option value="Rendah">Rendah</option>
+            </select>
+          </div>
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-slate-300 mb-1">Deskripsi / Ketentuan Pengumpulan</label>
+          <textarea id="taskDesc" rows="3" placeholder="Format file PDF, kumpulkan di e-learning / Google Drive..." class="w-full px-3.5 py-2.5 rounded-xl bg-[#09090f] border border-white/15 text-sm text-white focus:outline-none focus:border-pink-400"></textarea>
+        </div>
+        <div class="flex justify-end gap-2 pt-2">
+          <button type="button" data-close="taskModal" class="px-4 py-2.5 rounded-xl text-xs font-semibold bg-white/5 text-slate-300">Batal</button>
+          <button type="submit" class="pastel-btn px-5 py-2.5 rounded-xl text-xs">Simpan Tugas</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL KELOLA MATA KULIAH -->
+  <div id="courseModal" class="hidden fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="pastel-border rounded-2xl w-full max-w-md p-6 space-y-4 max-h-[90vh] overflow-y-auto">
+      <div class="flex items-center justify-between">
+        <h2 class="text-lg font-bold pastel-text">Kelola Mata Kuliah</h2>
+        <button data-close="courseModal" class="text-slate-400 hover:text-white text-xl">&times;</button>
+      </div>
+      <form id="courseForm" class="flex gap-2">
+        <input id="newCourseName" type="text" required placeholder="Nama mata kuliah baru..." class="flex-1 px-3.5 py-2 rounded-xl bg-[#09090f] border border-white/15 text-sm text-white focus:outline-none focus:border-purple-400" />
+        <button type="submit" class="pastel-btn px-4 py-2 rounded-xl text-xs">Tambah</button>
+      </form>
+      <div id="courseListManage" class="space-y-2 max-h-60 overflow-y-auto pr-1"></div>
+      <div class="flex items-center justify-between pt-2 border-t border-white/10">
+        <button id="btnResetCourses" type="button" class="text-xs text-sky-300 hover:underline">Reset ke 8 Matkul Utama</button>
+        <button data-close="courseModal" class="px-4 py-2 rounded-xl text-xs font-semibold bg-white/5 text-slate-300">Tutup</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- TOAST -->
+  <div id="toast" class="fixed bottom-5 right-5 z-50 hidden px-4 py-3 rounded-xl bg-[#181826] border border-pink-400/40 text-xs sm:text-sm font-medium text-white shadow-2xl"></div>
+
+  <!-- FIREBASE + APP LOGIC -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-app.js";
+    import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-auth.js";
+    import {
+      getFirestore, collection, doc, setDoc, deleteDoc, getDocs, onSnapshot
+    } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-firestore.js";
+
+    const DEFAULT_COURSES = [
+      "Algoritma programing",
+      "Introduction Computer Science",
+      "Calcullus",
+      "Matematika Diskrit",
+      "Pancasila",
+      "Sejarah Peradaban Islam",
+      "Alpro M",
+      "Alpro N"
+    ];
+
+    const COURSE_BADGES = [
+      "bg-purple-500/15 text-purple-300 border-purple-400/30",
+      "bg-pink-500/15 text-pink-300 border-pink-400/30",
+      "bg-sky-500/15 text-sky-300 border-sky-400/30",
+      "bg-fuchsia-500/15 text-fuchsia-300 border-fuchsia-400/30",
+      "bg-indigo-500/15 text-indigo-300 border-indigo-400/30",
+      "bg-cyan-500/15 text-cyan-300 border-cyan-400/30",
+      "bg-violet-500/15 text-violet-300 border-violet-400/30",
+      "bg-rose-500/15 text-rose-300 border-rose-400/30"
+    ];
+
+    function slugifyCourse(name) {
+      return "mk_" + name.trim().toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_|_$/g, "");
+    }
+
+    let tasks = [];
+    let courses = [];
+    let isAdmin = sessionStorage.getItem("kelas_admin_mode") === "true";
+    let adminPin = "1234";
+    let isSeedingCourses = false;
+    let useCloud = false;
+    let db = null;
+
+    const LOCAL_PROGRESS_KEY = "tugas_kuliah_personal_progress_v1";
+    const LOCAL_TASKS_KEY = "tugas_kuliah_fallback_tasks_v1";
+    const LOCAL_COURSES_KEY = "tugas_kuliah_fallback_courses_v1";
+
+    let personalProgress = JSON.parse(localStorage.getItem(LOCAL_PROGRESS_KEY) || "{}");
+
+    function savePersonalProgress() {
+      localStorage.setItem(LOCAL_PROGRESS_KEY, JSON.stringify(personalProgress));
+    }
+
+    function showToast(msg) {
+      const t = document.getElementById("toast");
+      t.textContent = msg;
+      t.classList.remove("hidden");
+      clearTimeout(window.__toastTimer);
+      window.__toastTimer = setTimeout(() => t.classList.add("hidden"), 3000);
+    }
+
+    function updateSyncUI(online, label) {
+      const dot = document.getElementById("syncDot");
+      const status = document.getElementById("syncStatus");
+      dot.className = online
+        ? "inline-block w-2 h-2 rounded-full bg-sky-400 shadow-[0_0_8px_#38bdf8]"
+        : "inline-block w-2 h-2 rounded-full bg-purple-400";
+      status.textContent = label;
+    }
+
+    function deduplicateCourses(list) {
+      const seen = new Set();
+      const clean = [];
+      for (const item of list) {
+        const name = (item.name || "").trim();
+        const key = name.toLowerCase();
+        if (!name || seen.has(key)) continue;
+        seen.add(key);
+        clean.push({ id: item.id || slugifyCourse(name), name, order: item.order ?? 99 });
+      }
+      return clean.sort((a, b) => (a.order ?? 99) - (b.order ?? 99));
+    }
+
+    function renderCourseDropdowns() {
+      const filterSelect = document.getElementById("filterCourse");
+      const formSelect = document.getElementById("taskCourse");
+      const manageList = document.getElementById("courseListManage");
+
+      const currentFilter = filterSelect.value;
+      const currentForm = formSelect.value;
+
+      filterSelect.innerHTML = `<option value="ALL">Semua Mata Kuliah</option>`;
+      formSelect.innerHTML = "";
+      manageList.innerHTML = "";
+
+      courses.forEach((c, idx) => {
+        const opt1 = document.createElement("option");
+        opt1.value = c.name;
+        opt1.textContent = c.name;
+        filterSelect.appendChild(opt1);
+
+        const opt2 = document.createElement("option");
+        opt2.value = c.name;
+        opt2.textContent = c.name;
+        formSelect.appendChild(opt2);
+
+        const row = document.createElement("div");
+        row.className = "flex items-center justify-between px-3 py-2 rounded-xl bg-[#09090f] border border-white/10 text-xs";
+        row.innerHTML = `
+          <span class="font-medium text-slate-200">${idx + 1}. ${escapeHtml(c.name)}</span>
+          <button type="button" data-del-course="${escapeHtml(c.id)}" class="text-rose-400 hover:text-rose-300 font-semibold px-2 py-0.5">Hapus</button>
+        `;
+        manageList.appendChild(row);
+      });
+
+      if ([...filterSelect.options].some(o => o.value === currentFilter)) filterSelect.value = currentFilter;
+      if ([...formSelect.options].some(o => o.value === currentForm)) formSelect.value = currentForm;
+
+      manageList.querySelectorAll("[data-del-course]").forEach(btn => {
+        btn.addEventListener("click", () => deleteCourse(btn.dataset.delCourse));
+      });
+    }
+
+    function escapeHtml(str) {
+      return String(str || "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;");
+    }
+
+    function formatDeadline(iso) {
+      if (!iso) return "-";
+      const d = new Date(iso);
+      return d.toLocaleDateString("id-ID", {
+        weekday: "short", day: "numeric", month: "short", year: "numeric",
+        hour: "2-digit", minute: "2-digit"
+      });
+    }
+
+    function getCountdownInfo(iso) {
+      const now = Date.now();
+      const target = new Date(iso).getTime();
+      const diff = target - now;
+      if (isNaN(target)) return { label: "Tanpa batas waktu", urgent: false, overdue: false };
+      if (diff <= 0) return { label: "Terlewat deadline", urgent: true, overdue: true };
+      const hours = Math.floor(diff / (1000 * 60 * 60));
+      const days = Math.floor(hours / 24);
+      const remHours = hours % 24;
+      if (days > 0) return { label: `${days} hari ${remHours} jam lagi`, urgent: false, overdue: false };
+      if (hours > 0) return { label: `${hours} jam lagi`, urgent: true, overdue: false };
+      const mins = Math.max(1, Math.floor(diff / (1000 * 60)));
+      return { label: `${mins} menit lagi`, urgent: true, overdue: false };
+    }
+
+    function getCourseBadgeClass(courseName) {
+      const idx = courses.findIndex(c => c.name.toLowerCase() === (courseName || "").toLowerCase());
+      return COURSE_BADGES[(idx >= 0 ? idx : 0) % COURSE_BADGES.length];
+    }
+
+    function renderTasks() {
+      const listEl = document.getElementById("taskList");
+      const emptyEl = document.getElementById("emptyState");
+      const q = document.getElementById("searchInput").value.trim().toLowerCase();
+      const fCourse = document.getElementById("filterCourse").value;
+      const fStatus = document.getElementById("filterStatus").value;
+
+      let doneCount = 0, doingCount = 0, urgentCount = 0;
+      tasks.forEach(t => {
+        const st = personalProgress[t.id] || "todo";
+        if (st === "done") doneCount++;
+        if (st === "doing") doingCount++;
+        const cd = getCountdownInfo(t.deadline);
+        if (st !== "done" && (cd.urgent || cd.overdue)) urgentCount++;
+      });
+
+      const total = tasks.length;
+      const pct = total ? Math.round((doneCount / total) * 100) : 0;
+      document.getElementById("statTotal").textContent = total;
+      document.getElementById("statDone").textContent = doneCount;
+      document.getElementById("statPercent").textContent = `${pct}%`;
+      document.getElementById("progressBar").style.width = `${pct}%`;
+      document.getElementById("statInProgress").textContent = doingCount;
+      document.getElementById("statUrgent").textContent = urgentCount;
+
+      const filtered = tasks
+        .filter(t => {
+          const st = personalProgress[t.id] || "todo";
+          if (fCourse !== "ALL" && t.course !== fCourse) return false;
+          if (fStatus !== "ALL" && st !== fStatus) return false;
+          if (q && !(t.title.toLowerCase().includes(q) || (t.desc || "").toLowerCase().includes(q) || t.course.toLowerCase().includes(q))) return false;
+          return true;
+        })
+        .sort((a, b) => new Date(a.deadline) - new Date(b.deadline));
+
+      listEl.innerHTML = "";
+      if (filtered.length === 0) {
+        emptyEl.classList.remove("hidden");
+        return;
+      }
+      emptyEl.classList.add("hidden");
+
+      filtered.forEach(t => {
+        const st = personalProgress[t.id] || "todo";
+        const cd = getCountdownInfo(t.deadline);
+        const badgeClass = getCourseBadgeClass(t.course);
+
+        const prioBadge = t.priority === "Tinggi"
+          ? "bg-rose-500/15 text-rose-300 border-rose-400/30"
+          : t.priority === "Sedang"
+            ? "bg-purple-500/15 text-purple-300 border-purple-400/30"
+            : "bg-sky-500/15 text-sky-300 border-sky-400/30";
+
+        const card = document.createElement("article");
+        card.className = `glass-card rounded-2xl p-5 flex flex-col justify-between gap-4 transition hover:border-purple-400/35 ${st === "done" ? "opacity-75" : ""}`;
+
+        card.innerHTML = `
+          <div class="space-y-3">
+            <div class="flex flex-wrap items-center justify-between gap-2">
+              <span class="px-2.5 py-1 rounded-lg text-[11px] font-bold border ${badgeClass}">${escapeHtml(t.course)}</span>
+              <div class="flex items-center gap-1.5">
+                <span class="px-2 py-0.5 rounded-md text-[10px] font-bold border ${prioBadge}">${escapeHtml(t.priority || "Sedang")}</span>
+                <span class="px-2 py-0.5 rounded-md text-[10px] font-bold ${cd.urgent ? "bg-rose-500/20 text-rose-300 border border-rose-400/30" : "bg-white/5 text-slate-300"}">
+                  ${escapeHtml(cd.label)}
+                </span>
+              </div>
+            </div>
+
+            <div>
+              <h3 class="text-base font-bold text-white leading-snug ${st === "done" ? "line-through text-slate-400" : ""}">${escapeHtml(t.title)}</h3>
+              ${t.desc ? `<p class="text-xs text-slate-400 mt-1.5 leading-relaxed whitespace-pre-line">${escapeHtml(t.desc)}</p>` : ""}
+            </div>
+
+            <div class="flex items-center gap-2 text-xs text-slate-300 pt-1">
+              <svg class="w-4 h-4 text-pink-300 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+              <span>Deadline: <strong class="text-white">${formatDeadline(t.deadline)}</strong></span>
+            </div>
+          </div>
+
+          <div class="pt-3 border-t border-white/10 flex flex-wrap items-center justify-between gap-2">
+            <select data-status-id="${escapeHtml(t.id)}" class="px-3 py-1.5 rounded-xl bg-[#09090f] border border-white/15 text-xs font-semibold text-slate-200 focus:outline-none focus:border-sky-400">
+              <option value="todo" ${st === "todo" ? "selected" : ""}>Belum Dikerjakan</option>
+              <option value="doing" ${st === "doing" ? "selected" : ""}>Sedang Dikerjakan</option>
+              <option value="done" ${st === "done" ? "selected" : ""}>Selesai</option>
+            </select>
+
+            <div class="flex items-center gap-1.5">
+              <button data-wa-id="${escapeHtml(t.id)}" class="px-2.5 py-1.5 rounded-lg text-[11px] font-semibold bg-sky-500/10 hover:bg-sky-500/20 text-sky-300 border border-sky-400/20 transition">
+                Info WA
+              </button>
+              ${isAdmin ? `
+                <button data-edit-id="${escapeHtml(t.id)}" class="px-2.5 py-1.5 rounded-lg text-[11px] font-semibold bg-purple-500/15 hover:bg-purple-500/25 text-purple-200 transition">Edit</button>
+                <button data-del-id="${escapeHtml(t.id)}" class="px-2.5 py-1.5 rounded-lg text-[11px] font-semibold bg-rose-500/15 hover:bg-rose-500/25 text-rose-300 transition">Hapus</button>
+              ` : ""}
+            </div>
+          </div>
+        `;
+
+        listEl.appendChild(card);
+      });
+
+      listEl.querySelectorAll("[data-status-id]").forEach(sel => {
+        sel.addEventListener("change", (e) => {
+          personalProgress[sel.dataset.statusId] = e.target.value;
+          savePersonalProgress();
+          renderTasks();
+          showToast("Progres pribadimu diperbarui!");
+        });
+      });
+
+      listEl.querySelectorAll("[data-wa-id]").forEach(btn => {
+        btn.addEventListener("click", () => {
+          const item = tasks.find(x => x.id === btn.dataset.waId);
+          if (!item) return;
+          const text = `*INFO TUGAS KULIAH*
+• Matkul: *${item.course}*
+• Tugas: *${item.title}*
+• Deadline: ${formatDeadline(item.deadline)}
+${item.desc ? `• Catatan: ${item.desc}
+` : ""}
+Cek detail di web tugas kelas!`;
+          navigator.clipboard?.writeText(text);
+          showToast("Info tugas disalin untuk WhatsApp!");
+        });
+      });
+
+      if (isAdmin) {
+        listEl.querySelectorAll("[data-edit-id]").forEach(btn => {
+          btn.addEventListener("click", () => openTaskModal(btn.dataset.editId));
+        });
+        listEl.querySelectorAll("[data-del-id]").forEach(btn => {
+          btn.addEventListener("click", () => deleteTask(btn.dataset.delId));
+        });
+      }
+    }
+
+    function syncAdminUI() {
+      const adminBar = document.getElementById("adminBar");
+      const label = document.getElementById("adminBtnLabel");
+      if (isAdmin) {
+        adminBar.classList.remove("hidden");
+        label.textContent = "Keluar Komting";
+      } else {
+        adminBar.classList.add("hidden");
+        label.textContent = "Mode Komting";
+      }
+      renderTasks();
+    }
+
+    async function seedDefaultCoursesCloud() {
+      if (isSeedingCourses || !useCloud) return;
+      isSeedingCourses = true;
+      try {
+        for (let i = 0; i < DEFAULT_COURSES.length; i++) {
+          const name = DEFAULT_COURSES[i];
+          const id = slugifyCourse(name);
+          await setDoc(doc(db, "kelas_courses_v2", id), { name, order: i }, { merge: true });
+        }
+      } finally {
+        isSeedingCourses = false;
+      }
+    }
+
+    async function resetCoursesToDefault() {
+      if (!confirm("Reset daftar mata kuliah ke 8 mata kuliah utama kelas?")) return;
+      if (useCloud) {
+        const snap = await getDocs(collection(db, "kelas_courses_v2"));
+        for (const d of snap.docs) {
+          await deleteDoc(doc(db, "kelas_courses_v2", d.id));
+        }
+        await seedDefaultCoursesCloud();
+      } else {
+        courses = DEFAULT_COURSES.map((name, i) => ({ id: slugifyCourse(name), name, order: i }));
+        localStorage.setItem(LOCAL_COURSES_KEY, JSON.stringify(courses));
+        renderCourseDropdowns();
+      }
+      showToast("8 mata kuliah utama berhasil di-reset!");
+    }
+
+    async function saveCourse(name) {
+      const cleanName = name.trim();
+      if (!cleanName) return;
+      const id = slugifyCourse(cleanName);
+      if (useCloud) {
+        await setDoc(doc(db, "kelas_courses_v2", id), { name: cleanName, order: courses.length }, { merge: true });
+      } else {
+        courses = deduplicateCourses([...courses, { id, name: cleanName, order: courses.length }]);
+        localStorage.setItem(LOCAL_COURSES_KEY, JSON.stringify(courses));
+        renderCourseDropdowns();
+      }
+      showToast(`Matkul "${cleanName}" ditambahkan!`);
+    }
+
+    async function deleteCourse(id) {
+      if (!confirm("Hapus mata kuliah ini dari pilihan?")) return;
+      if (useCloud) {
+        await deleteDoc(doc(db, "kelas_courses_v2", id));
+      } else {
+        courses = courses.filter(c => c.id !== id);
+        localStorage.setItem(LOCAL_COURSES_KEY, JSON.stringify(courses));
+        renderCourseDropdowns();
+      }
+      showToast("Mata kuliah dihapus.");
+    }
+
+    async function saveTask(payload) {
+      const id = payload.id || ("task_" + Date.now());
+      const data = {
+        course: payload.course,
+        title: payload.title,
+        deadline: payload.deadline,
+        priority: payload.priority,
+        desc: payload.desc,
+        updatedAt: Date.now()
+      };
+      if (useCloud) {
+        await setDoc(doc(db, "kelas_tasks_v2", id), data, { merge: true });
+      } else {
+        const idx = tasks.findIndex(t => t.id === id);
+        if (idx >= 0) tasks[idx] = { id, ...data };
+        else tasks.push({ id, ...data });
+        localStorage.setItem(LOCAL_TASKS_KEY, JSON.stringify(tasks));
+        renderTasks();
+      }
+      showToast(payload.id ? "Tugas berhasil diperbarui!" : "Tugas baru dibagikan ke kelas!");
+    }
+
+    async function deleteTask(id) {
+      if (!confirm("Hapus tugas ini untuk seluruh kelas?")) return;
+      if (useCloud) {
+        await deleteDoc(doc(db, "kelas_tasks_v2", id));
+      } else {
+        tasks = tasks.filter(t => t.id !== id);
+        localStorage.setItem(LOCAL_TASKS_KEY, JSON.stringify(tasks));
+        renderTasks();
+      }
+      showToast("Tugas kelas dihapus.");
+    }
+
+    function openModal(id) { document.getElementById(id).classList.remove("hidden"); }
+    function closeModal(id) { document.getElementById(id).classList.add("hidden"); }
+
+    document.querySelectorAll("[data-close]").forEach(btn => {
+      btn.addEventListener("click", () => closeModal(btn.dataset.close));
+    });
+
+    function openTaskModal(editId = null) {
+      const form = document.getElementById("taskForm");
+      form.reset();
+      document.getElementById("taskId").value = "";
+      if (editId) {
+        const item = tasks.find(t => t.id === editId);
+        if (!item) return;
+        document.getElementById("taskModalTitle").textContent = "Edit Tugas Kelas";
+        document.getElementById("taskId").value = item.id;
+        document.getElementById("taskCourse").value = item.course;
+        document.getElementById("taskTitle").value = item.title;
+        document.getElementById("taskDeadline").value = item.deadline;
+        document.getElementById("taskPriority").value = item.priority || "Sedang";
+        document.getElementById("taskDesc").value = item.desc || "";
+      } else {
+        document.getElementById("taskModalTitle").textContent = "Tambah Tugas Baru";
+        const tomorrow = new Date(Date.now() + 86400000);
+        tomorrow.setMinutes(tomorrow.getMinutes() - tomorrow.getTimezoneOffset());
+        document.getElementById("taskDeadline").value = tomorrow.toISOString().slice(0, 16);
+      }
+      openModal("taskModal");
+    }
+
+    document.getElementById("btnAdminToggle").addEventListener("click", () => {
+      if (isAdmin) {
+        isAdmin = false;
+        sessionStorage.removeItem("kelas_admin_mode");
+        syncAdminUI();
+        showToast("Keluar dari Mode Komting.");
+      } else {
+        document.getElementById("pinInput").value = "";
+        document.getElementById("pinError").classList.add("hidden");
+        openModal("pinModal");
+        setTimeout(() => document.getElementById("pinInput").focus(), 100);
+      }
+    });
+
+    document.getElementById("btnSubmitPin").addEventListener("click", () => {
+      const val = document.getElementById("pinInput").value.trim();
+      if (val === adminPin) {
+        isAdmin = true;
+        sessionStorage.setItem("kelas_admin_mode", "true");
+        closeModal("pinModal");
+        syncAdminUI();
+        showToast("Berhasil masuk Mode Komting!");
+      } else {
+        document.getElementById("pinError").classList.remove("hidden");
+      }
+    });
+
+    document.getElementById("pinInput").addEventListener("keydown", (e) => {
+      if (e.key === "Enter") document.getElementById("btnSubmitPin").click();
+    });
+
+    document.getElementById("btnChangePin").addEventListener("click", async () => {
+      const nextPin = prompt("Masukkan PIN Komting baru (minimal 4 angka):", adminPin);
+      if (!nextPin || nextPin.trim().length < 4) return showToast("PIN minimal 4 karakter.");
+      adminPin = nextPin.trim();
+      if (useCloud) {
+        await setDoc(doc(db, "kelas_config", "admin"), { pin: adminPin }, { merge: true });
+      } else {
+        localStorage.setItem("kelas_admin_pin", adminPin);
+      }
+      showToast("PIN Komting berhasil diperbarui!");
+    });
+
+    document.getElementById("btnOpenTaskModal").addEventListener("click", () => openTaskModal());
+    document.getElementById("btnOpenCourseModal").addEventListener("click", () => openModal("courseModal"));
+    document.getElementById("btnResetCourses").addEventListener("click", resetCoursesToDefault);
+
+    document.getElementById("taskForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      await saveTask({
+        id: document.getElementById("taskId").value || null,
+        course: document.getElementById("taskCourse").value,
+        title: document.getElementById("taskTitle").value.trim(),
+        deadline: document.getElementById("taskDeadline").value,
+        priority: document.getElementById("taskPriority").value,
+        desc: document.getElementById("taskDesc").value.trim()
+      });
+      closeModal("taskModal");
+    });
+
+    document.getElementById("courseForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const inp = document.getElementById("newCourseName");
+      await saveCourse(inp.value);
+      inp.value = "";
+    });
+
+    document.getElementById("btnCopyWA").addEventListener("click", () => {
+      if (tasks.length === 0) return showToast("Belum ada tugas untuk direkap.");
+      const sorted = [...tasks].sort((a, b) => new Date(a.deadline) - new Date(b.deadline));
+      const lines = sorted.map((t, i) => `${i + 1}. *[${t.course}]* ${t.title}
+   ⏰ Deadline: ${formatDeadline(t.deadline)}`);
+      const msg = `*REKAP TUGAS KULIAH KELAS*
+
+${lines.join("
+
+")}
+
+_Update real-time di web tugas kelas_`;
+      navigator.clipboard?.writeText(msg);
+      showToast("Rekap semua tugas disalin untuk grup WA!");
+    });
+
+    ["searchInput", "filterCourse", "filterStatus"].forEach(id => {
+      document.getElementById(id).addEventListener("input", renderTasks);
+      document.getElementById(id).addEventListener("change", renderTasks);
+    });
+
+    async function initApp() {
+      courses = DEFAULT_COURSES.map((name, i) => ({ id: slugifyCourse(name), name, order: i }));
+      renderCourseDropdowns();
+      syncAdminUI();
+
+      // Tempelkan firebaseConfig milikmu di bawah ini agar Live Sync satu kelas aktif penuh setelah di-upload ke Vercel
+      const firebaseConfig = window.__FIREBASE_CONFIG__ || {
+        apiKey: "",
+        authDomain: "",
+        projectId: "",
+        storageBucket: "",
+        messagingSenderId: "",
+        appId: ""
+      };
+
+      if (firebaseConfig && firebaseConfig.apiKey && firebaseConfig.projectId) {
+        try {
+          const app = initializeApp(firebaseConfig);
+          const auth = getAuth(app);
+          db = getFirestore(app);
+          await signInAnonymously(auth);
+          useCloud = true;
+          updateSyncUI(true, "Live Sync Kelas Aktif");
+
+          onSnapshot(doc(db, "kelas_config", "admin"), (snap) => {
+            if (snap.exists() && snap.data().pin) {
+              adminPin = String(snap.data().pin);
+            }
+          });
+
+          onSnapshot(collection(db, "kelas_courses_v2"), async (snap) => {
+            if (snap.empty) {
+              await seedDefaultCoursesCloud();
+              return;
+            }
+            const raw = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+            courses = deduplicateCourses(raw);
+            renderCourseDropdowns();
+            renderTasks();
+          });
+
+          onSnapshot(collection(db, "kelas_tasks_v2"), (snap) => {
+            tasks = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+            renderTasks();
+          });
+          return;
+        } catch (err) {
+          console.warn("Firebase fallback ke mode lokal:", err);
+        }
+      }
+
+      useCloud = false;
+      adminPin = localStorage.getItem("kelas_admin_pin") || "1234";
+      const savedCourses = JSON.parse(localStorage.getItem(LOCAL_COURSES_KEY) || "null");
+      if (savedCourses && savedCourses.length) {
+        courses = deduplicateCourses(savedCourses);
+      }
+      tasks = JSON.parse(localStorage.getItem(LOCAL_TASKS_KEY) || "[]");
+      renderCourseDropdowns();
+      renderTasks();
+      updateSyncUI(false, "Mode Offline / Lokal (Isi Firebase Config untuk Live Sync)");
+    }
+
+    initApp();
+  </script>
+</body>
+</html>
